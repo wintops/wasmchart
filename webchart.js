@@ -1919,6 +1919,10 @@ rtl.module("SysUtils",["System","RTLConsts","JS"],function () {
   });
   rtl.createClass(this,"EExternalException",this.EExternal,function () {
   });
+  this.RightStr = function (S, Count) {
+    var l = S.length;
+    return (Count<1) ? "" : ( Count>=l ? S : S.substr(l-Count));
+  };
   this.TrimLeft = function (S) {
     return S.replace(/^[\s\uFEFF\xA0\x00-\x1f]+/,'');
   };
@@ -2707,6 +2711,7 @@ rtl.module("Classes",["System","RTLConsts","Types","SysUtils","JS"],function () 
   "use strict";
   var $mod = this;
   var $impl = $mod.$impl;
+  this.$rtti.$MethodVar("TNotifyEvent",{procsig: rtl.newTIProcSig([["Sender",pas.System.$rtti["TObject"]]]), methodkind: 0});
   rtl.createClass(this,"EListError",pas.SysUtils.Exception,function () {
   });
   rtl.createClass(this,"EStringListError",this.EListError,function () {
@@ -3121,6 +3126,7 @@ rtl.module("weborworker",["System","JS","Types"],function () {
 rtl.module("Web",["System","Types","JS","weborworker"],function () {
   "use strict";
   var $mod = this;
+  this.$rtti.$ExtClass("TJSHTMLCanvasElement",{ancestor: this.$rtti["TJSHTMLElement"], jsclass: "HTMLCanvasElement"});
 });
 rtl.module("CustApp",["System","Classes","SysUtils","Types","JS"],function () {
   "use strict";
@@ -4351,7 +4357,461 @@ rtl.module("wasihostapp",["System","Classes","SysUtils","BrowserApp","JS","webas
     $r.addMethod("Create$1",2,[["aOwner",pas.Classes.$rtti["TComponent"]]]);
   });
 });
-rtl.module("wacanvas",["System","JS","Web","webassembly","wasienv"],function () {
+rtl.module("canvas2webgl",["System","JS","Web"],function () {
+  "use strict";
+  var $mod = this;
+});
+rtl.module("jsGraphics",["System","Classes","SysUtils","JS","Web","canvas2webgl","Types"],function () {
+  "use strict";
+  var $mod = this;
+  this.$rtti.$Int("TFontCharSet",{minvalue: 0, maxvalue: 255, ordtype: 3});
+  this.TFontStyle = {"0": "fsBold", fsBold: 0, "1": "fsItalic", fsItalic: 1, "2": "fsUnderline", fsUnderline: 2, "3": "fsStrikeOut", fsStrikeOut: 3};
+  this.$rtti.$Enum("TFontStyle",{minvalue: 0, maxvalue: 3, ordtype: 1, enumtype: this.TFontStyle});
+  this.$rtti.$Set("TFontStyles",{comptype: this.$rtti["TFontStyle"]});
+  this.TPenStyle = {"0": "psSolid", psSolid: 0, "1": "psDash", psDash: 1, "2": "psDot", psDot: 2, "3": "psDashDot", psDashDot: 3, "4": "psDashDotDot", psDashDotDot: 4, "5": "psInsideFrame", psInsideFrame: 5, "6": "psPattern", psPattern: 6, "7": "psClear", psClear: 7};
+  this.$rtti.$Enum("TPenStyle",{minvalue: 0, maxvalue: 7, ordtype: 1, enumtype: this.TPenStyle});
+  this.TBrushStyle = {"0": "bsSolid", bsSolid: 0, "1": "bsClear", bsClear: 1, "2": "bsHorizontal", bsHorizontal: 2, "3": "bsVertical", bsVertical: 3, "4": "bsFDiagonal", bsFDiagonal: 4, "5": "bsBDiagonal", bsBDiagonal: 5, "6": "bsCross", bsCross: 6, "7": "bsDiagCross", bsDiagCross: 7, "8": "bsImage", bsImage: 8, "9": "bsPattern", bsPattern: 9};
+  this.$rtti.$Enum("TBrushStyle",{minvalue: 0, maxvalue: 9, ordtype: 1, enumtype: this.TBrushStyle});
+  rtl.createClass(this,"TFont",pas.Classes.TPersistent,function () {
+    this.$init = function () {
+      pas.Classes.TPersistent.$init.call(this);
+      this.FCharSet = 0;
+      this.FColor = 0;
+      this.FName = "";
+      this.FSize = 0;
+      this.FStyle = {};
+      this.FUpdateCount = 0;
+      this.FOnChange = null;
+    };
+    this.$final = function () {
+      this.FStyle = undefined;
+      this.FOnChange = undefined;
+      pas.Classes.TPersistent.$final.call(this);
+    };
+    this.GetHeight = function () {
+      var Result = 0;
+      Result = Math.round((this.FSize * 96) / 72);
+      return Result;
+    };
+    this.SetCharSet = function (AValue) {
+      if (this.FCharSet !== AValue) {
+        this.FCharSet = AValue;
+        this.Changed();
+      };
+    };
+    this.SetColor = function (AValue) {
+      if (this.FColor !== AValue) {
+        this.FColor = AValue;
+        this.Changed();
+      };
+    };
+    this.SetHeight = function (AValue) {
+      this.SetSize(Math.round((AValue * 72) / 96));
+    };
+    this.SetName = function (AValue) {
+      if (this.FName !== AValue) {
+        this.FName = AValue;
+        this.Changed();
+      };
+    };
+    this.SetSize = function (AValue) {
+      if (this.FSize !== AValue) {
+        this.FSize = AValue;
+        this.Changed();
+      };
+    };
+    this.SetStyle = function (AValue) {
+      if (rtl.neSet(this.FStyle,AValue)) {
+        this.FStyle = rtl.refSet(AValue);
+        this.Changed();
+      };
+    };
+    this.Changed = function () {
+      if ((this.FUpdateCount === 0) && (this.FOnChange != null)) {
+        this.FOnChange(this);
+      };
+    };
+    this.Create$1 = function () {
+      pas.System.TObject.Create.call(this);
+      this.FColor = 0;
+      this.FName = $mod.ffMonospace;
+      this.FSize = 16;
+      this.FStyle = {};
+      this.FUpdateCount = 0;
+      return this;
+    };
+    var $r = this.$rtti;
+    $r.addMethod("Create$1",2,[]);
+    $r.addProperty("CharSet",2,$mod.$rtti["TFontCharSet"],"FCharSet","SetCharSet");
+    $r.addProperty("Color",2,rtl.nativeuint,"FColor","SetColor");
+    $r.addProperty("Height",3,rtl.nativeint,"GetHeight","SetHeight");
+    $r.addProperty("Name",2,rtl.string,"FName","SetName");
+    $r.addProperty("Size",2,rtl.nativeint,"FSize","SetSize");
+    $r.addProperty("Style",2,$mod.$rtti["TFontStyles"],"FStyle","SetStyle");
+    $r.addProperty("OnChange",0,pas.Classes.$rtti["TNotifyEvent"],"FOnChange","FOnChange");
+  });
+  rtl.createClass(this,"TPen",pas.Classes.TPersistent,function () {
+    this.$init = function () {
+      pas.Classes.TPersistent.$init.call(this);
+      this.FColor = 0;
+      this.FStyle = 0;
+      this.FWidth = 0;
+      this.FUpdateCount = 0;
+      this.FOnChange = null;
+    };
+    this.$final = function () {
+      this.FOnChange = undefined;
+      pas.Classes.TPersistent.$final.call(this);
+    };
+    this.SetColor = function (AValue) {
+      if (this.FColor !== AValue) {
+        this.FColor = AValue;
+        this.Changed();
+      };
+    };
+    this.SetStyle = function (AValue) {
+      if (this.FStyle !== AValue) {
+        this.FStyle = AValue;
+        this.Changed();
+      };
+    };
+    this.SetWidth = function (AValue) {
+      if (this.FWidth !== AValue) {
+        this.FWidth = AValue;
+        this.Changed();
+      };
+    };
+    this.Changed = function () {
+      if ((this.FUpdateCount === 0) && (this.FOnChange != null)) {
+        this.FOnChange(this);
+      };
+    };
+    this.Create$1 = function () {
+      pas.System.TObject.Create.call(this);
+      this.FColor = 0;
+      this.FStyle = 0;
+      this.FWidth = 1;
+      this.FUpdateCount = 0;
+      return this;
+    };
+    var $r = this.$rtti;
+    $r.addMethod("Create$1",2,[]);
+    $r.addProperty("Color",2,rtl.nativeuint,"FColor","SetColor");
+    $r.addProperty("Style",2,$mod.$rtti["TPenStyle"],"FStyle","SetStyle");
+    $r.addProperty("Width",2,rtl.nativeint,"FWidth","SetWidth");
+    $r.addProperty("OnChange",0,pas.Classes.$rtti["TNotifyEvent"],"FOnChange","FOnChange");
+  });
+  rtl.createClass(this,"TBrush",pas.Classes.TPersistent,function () {
+    this.$init = function () {
+      pas.Classes.TPersistent.$init.call(this);
+      this.FColor = 0;
+      this.FStyle = 0;
+      this.FUpdateCount = 0;
+      this.FOnChange = null;
+    };
+    this.$final = function () {
+      this.FOnChange = undefined;
+      pas.Classes.TPersistent.$final.call(this);
+    };
+    this.SetColor = function (AValue) {
+      if (this.FColor !== AValue) {
+        this.FColor = AValue;
+        this.Changed();
+      };
+    };
+    this.SetStyle = function (AValue) {
+      if (this.FStyle === AValue) {
+        this.FStyle = AValue;
+        this.Changed();
+      };
+    };
+    this.Changed = function () {
+      if ((this.FUpdateCount === 0) && (this.FOnChange != null)) {
+        this.FOnChange(this);
+      };
+    };
+    this.Create$1 = function () {
+      pas.System.TObject.Create.call(this);
+      this.FColor = 16777215;
+      this.FStyle = 0;
+      this.FUpdateCount = 0;
+      return this;
+    };
+    var $r = this.$rtti;
+    $r.addMethod("Create$1",2,[]);
+    $r.addProperty("Color",2,rtl.nativeuint,"FColor","SetColor");
+    $r.addProperty("Style",2,$mod.$rtti["TBrushStyle"],"FStyle","SetStyle");
+    $r.addProperty("OnChange",0,pas.Classes.$rtti["TNotifyEvent"],"FOnChange","FOnChange");
+  });
+  rtl.createClass(this,"TCanvas",pas.Classes.TPersistent,function () {
+    this.$init = function () {
+      pas.Classes.TPersistent.$init.call(this);
+      this.FBrush = null;
+      this.FFont = null;
+      this.FPen = null;
+      this.FUpdateCount = 0;
+      this.FOnChange = null;
+      this.isWebGL = false;
+      this.ctx = null;
+      this.FCanvasElement = null;
+    };
+    this.$final = function () {
+      this.FBrush = undefined;
+      this.FFont = undefined;
+      this.FPen = undefined;
+      this.FOnChange = undefined;
+      this.ctx = undefined;
+      this.FCanvasElement = undefined;
+      pas.Classes.TPersistent.$final.call(this);
+    };
+    this.PrepareStyle = function () {
+      this.ctx.fillStyle = $mod.JSColor(this.FBrush.FColor);
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeStyle = $mod.JSColor(this.FPen.FColor);
+      if (!this.isWebGL) {
+        var $tmp = this.FPen.FStyle;
+        if ($tmp === 1) {
+          this.ctx.setLineDash([8,2])}
+         else if ($tmp === 2) {
+          this.ctx.setLineDash([1,2])}
+         else {
+          this.ctx.setLineDash([]);
+        };
+      };
+    };
+    this.Create$1 = function () {
+      pas.System.TObject.Create.call(this);
+      this.FBrush = $mod.TBrush.$create("Create$1");
+      this.FFont = $mod.TFont.$create("Create$1");
+      this.FPen = $mod.TPen.$create("Create$1");
+      this.FUpdateCount = 0;
+      return this;
+    };
+    this.Destroy = function () {
+      this.FBrush.$destroy("Destroy");
+      this.FFont.$destroy("Destroy");
+      this.FPen.$destroy("Destroy");
+      this.FBrush = null;
+      this.FFont = null;
+      this.FPen = null;
+      pas.System.TObject.Destroy.call(this);
+    };
+    this.Clear = function () {
+      this.ClearRect(0,0,this.FCanvasElement.width,this.FCanvasElement.height);
+    };
+    this.ClearRect = function (X1, Y1, X2, Y2) {
+      this.ctx.clearRect(X1,Y1,X2,Y2);
+    };
+    this.LineTo = function (X, Y) {
+      this.PrepareStyle();
+      this.ctx.lineTo(X,Y);
+      if (this.FPen.FStyle !== 7) {
+        this.ctx.stroke();
+      };
+    };
+    this.MoveTo = function (X, Y) {
+      this.ctx.beginPath();
+      this.ctx.moveTo(X,Y);
+    };
+    var $r = this.$rtti;
+    $r.addMethod("Create$1",2,[]);
+    $r.addProperty("Canvas",0,pas.Web.$rtti["TJSHTMLCanvasElement"],"FCanvasElement","FCanvasElement");
+    $r.addProperty("Element",0,pas.Web.$rtti["TJSHTMLCanvasElement"],"FCanvasElement","");
+    $r.addProperty("Brush",0,$mod.$rtti["TBrush"],"FBrush","FBrush");
+    $r.addProperty("Font",0,$mod.$rtti["TFont"],"FFont","FFont");
+    $r.addProperty("Pen",0,$mod.$rtti["TPen"],"FPen","FPen");
+    $r.addProperty("OnChange",0,pas.Classes.$rtti["TNotifyEvent"],"FOnChange","FOnChange");
+  });
+  this.clBlack = 0x0;
+  this.clYellow = 0xFFFF;
+  this.clWhite = 0xFFFFFF;
+  this.ffMonospace = "Arial";
+  this.JSColor = function (AColor) {
+    var Result = "";
+    var R = 0;
+    var G = 0;
+    var B = 0;
+    R = AColor & 0xFF;
+    G = Math.floor(AColor / 256) & 0xFF;
+    B = Math.floor(AColor / 65536) & 0xFF;
+    Result = "#" + pas.SysUtils.IntToHex(R,2) + pas.SysUtils.IntToHex(G,2) + pas.SysUtils.IntToHex(B,2);
+    return Result;
+  };
+});
+rtl.module("fjsform",["System","JS","Web","canvas2webgl","jsGraphics","wacanvas","SysUtils"],function () {
+  "use strict";
+  var $mod = this;
+  rtl.createClass(this,"TJSForm",pas.System.TObject,function () {
+    this.$init = function () {
+      pas.System.TObject.$init.call(this);
+      this.canvas1 = null;
+      this.canvas2 = null;
+      this.Panel = null;
+      this.XHR = null;
+      this.sInput = "";
+      this.DataText = "";
+      this.Fcode = "";
+      this.nz = 0;
+      this.CtlCanvas = null;
+    };
+    this.$final = function () {
+      this.canvas1 = undefined;
+      this.canvas2 = undefined;
+      this.Panel = undefined;
+      this.XHR = undefined;
+      this.CtlCanvas = undefined;
+      pas.System.TObject.$final.call(this);
+    };
+    this.Create$1 = function () {
+      var $Self = this;
+      var s = "";
+      this.nz = 3;
+      pas.System.Writeln(window.location.search);
+      window.onkeydown = rtl.createSafeCallback($Self,"onKeydown");
+      window.onresize = rtl.createSafeCallback($Self,"onResize");
+      this.Panel = document.getElementById("mchart");
+      if (this.Panel === null) {
+        this.Panel = document.createElement("div");
+        this.Panel.setAttribute("id","mchart");
+        this.Panel.setAttribute("style","width:100%;height:100%;position: absolute;top:5px;bottom:5px;");
+        document.body.appendChild(this.Panel);
+      };
+      this.canvas1 = document.createElement("canvas");
+      this.canvas1.setAttribute("id","canvas1");
+      this.canvas1.style.setProperty("background-color","#000");
+      this.canvas1.style.setProperty("position","absolute");
+      this.canvas1.style.setProperty("width","100%");
+      this.canvas1.style.setProperty("height","100%");
+      this.canvas1.setAttribute("top","0");
+      this.canvas1.setAttribute("left","0");
+      this.canvas1.setAttribute("width",pas.SysUtils.IntToStr(this.Panel.clientWidth));
+      this.canvas1.setAttribute("height",pas.SysUtils.IntToStr(this.Panel.clientHeight));
+      this.canvas2 = document.createElement("canvas");
+      this.canvas2.setAttribute("id","canvas2");
+      this.canvas2.setAttribute("top","0");
+      this.canvas2.setAttribute("left","0");
+      this.canvas2.setAttribute("width",pas.SysUtils.IntToStr(this.Panel.clientWidth));
+      this.canvas2.setAttribute("height",pas.SysUtils.IntToStr(this.Panel.clientHeight));
+      this.canvas2.setAttribute("hoverCursor","pointer");
+      this.canvas2.style.setProperty("background-color","transparent");
+      this.canvas2.style.setProperty("position","absolute");
+      this.canvas2.style.setProperty("width","100%");
+      this.canvas2.style.setProperty("height","100%");
+      this.canvas2.onmousemove = rtl.createSafeCallback($Self,"onCtlMouseMove");
+      this.canvas2.touchmove = rtl.createSafeCallback($Self,"onCtlTouchMove");
+      this.Panel.appendChild(this.canvas1);
+      this.Panel.appendChild(this.canvas2);
+      s = window.location.pathname;
+      s = pas.SysUtils.RightStr(s,6);
+      if ((s.length < 6) || (s === "x.html")) {
+        s = pas.System.Copy(window.location.search,4,6);
+      };
+      if ((s.length < 6) || (pas.System.Pos("html",s) > 0)) s = "";
+      this.CtlCanvas = pas.jsGraphics.TCanvas.$create("Create$1");
+      this.CtlCanvas.isWebGL = false;
+      this.CtlCanvas.FCanvasElement = this.canvas2;
+      if (this.CtlCanvas.isWebGL) {
+        this.CtlCanvas.ctx = enableWebGLCanvas(this.canvas2)}
+       else this.CtlCanvas.ctx = this.canvas2.getContext("2d");
+      this.CtlCanvas.FPen.SetStyle(0);
+      this.CtlCanvas.FFont.SetHeight(30 * this.nz);
+      this.DataText = s;
+      this.canvas1.width = this.Panel.clientWidth * this.nz;
+      this.canvas1.height = this.Panel.clientHeight * this.nz;
+      this.canvas2.width = this.Panel.clientWidth * this.nz;
+      this.canvas2.height = this.Panel.clientHeight * this.nz;
+      return this;
+    };
+    this.InitChart = function () {
+      $mod.Fadd(-2,0,this.Panel.clientWidth * this.nz,this.Panel.clientHeight * this.nz,0,0,0,0);
+      this.Update();
+    };
+    this.Update = function () {
+      $mod.Fadd(-99,0,this.Panel.clientWidth * this.nz,this.Panel.clientHeight * this.nz,0,0,0,0);
+    };
+    this.onKeydown = function (aEvent) {
+      var Result = false;
+      this.KeyPress(aEvent.key);
+      Result = true;
+      return Result;
+    };
+    this.onResize = function (Event) {
+      var Result = false;
+      this.canvas1.width = this.Panel.clientWidth * this.nz;
+      this.canvas1.height = this.Panel.clientHeight * this.nz;
+      this.canvas2.width = this.Panel.clientWidth * this.nz;
+      this.canvas2.height = this.Panel.clientHeight * this.nz;
+      this.Update();
+      Result = true;
+      return Result;
+    };
+    this.onCtlMouseMove = function (aEvent) {
+      var Result = false;
+      this.OnMouseMove(aEvent.offsetX * this.nz,aEvent.offsetY * this.nz);
+      Result = true;
+      return Result;
+    };
+    this.onCtlTouchMove = function (aEvent) {
+      var Result = false;
+      this.OnMouseMove(aEvent.targetTouches.item(0).pageX * this.nz,aEvent.targetTouches.item(0).pageY * this.nz);
+      Result = true;
+      return Result;
+    };
+    this.KeyPress = function (Key) {
+      if (Key === "Escape") {}
+      else if (Key === "Enter") {
+        this.getData(this.sInput);
+        this.sInput = "";
+      } else {
+        this.sInput = this.sInput + Key;
+      };
+    };
+    this.getData = function (s) {
+      if (s === this.Fcode) return;
+      this.Fcode = s;
+      this.XHR = new XMLHttpRequest();
+      this.XHR.addEventListener("load",rtl.createSafeCallback(this,"onLoad"));
+      this.XHR.open("GET",s,true);
+      this.XHR.send();
+    };
+    this.onLoad = function (Event) {
+      var Result = false;
+      var i = 0;
+      var J = null;
+      var A = null;
+      var C = null;
+      if (this.XHR.status === 200) {
+        J = JSON.parse(this.XHR.responseText);
+        this.onResize(null);
+        this.DataText = this.XHR.responseText;
+        A = J["data"];
+        $mod.Fadd(-1,A.length,0,0,0,0,0,0);
+        for (var $l = 0, $end = A.length - 1; $l <= $end; $l++) {
+          i = $l;
+          C = A[i];
+          $mod.Fadd(i,Math.round(pas.JS.toNumber(C[0])),pas.JS.toNumber(C[1]),pas.JS.toNumber(C[4]),pas.JS.toNumber(C[3]),pas.JS.toNumber(C[2]),pas.JS.toNumber(C[5]),0);
+        };
+        this.Update();
+      };
+      Result = true;
+      return Result;
+    };
+    this.OnMouseMove = function (X, Y) {
+      this.CtlCanvas.Clear();
+      this.CtlCanvas.FPen.SetColor(65535);
+      this.CtlCanvas.FBrush.SetColor(65535);
+      this.CtlCanvas.MoveTo(0,Math.round(Y));
+      this.CtlCanvas.LineTo(this.CtlCanvas.FCanvasElement.width,Math.round(Y));
+      this.CtlCanvas.MoveTo(Math.round(X),0);
+      this.CtlCanvas.LineTo(Math.round(X),this.CtlCanvas.FCanvasElement.height);
+      if ($mod.Fgetcx != null) $mod.Fgetcx(X,Y);
+    };
+  });
+  this.JSForm = null;
+  this.Fadd = null;
+  this.Fgetcx = null;
+});
+rtl.module("wacanvas",["System","SysUtils","JS","Web","webassembly","wasienv"],function () {
   "use strict";
   var $mod = this;
   var $impl = $mod.$impl;
@@ -4363,57 +4823,43 @@ rtl.module("wacanvas",["System","JS","Web","webassembly","wasienv"],function () 
       this.FCanvases = null;
       this.FCurrentID = 0;
       this.FCanvasParent = null;
-      this.XHR = null;
     };
     this.$final = function () {
       this.FCanvases = undefined;
       this.FCanvasParent = undefined;
-      this.XHR = undefined;
       pas.wasienv.TImportExtension.$final.call(this);
-    };
-    this.onLoad = function (Event) {
-      var Result = false;
-      var i = 0;
-      var J = null;
-      var A = null;
-      var C = null;
-      var s = "";
-      if (this.XHR.status === 200) {
-        s = this.XHR.responseText;
-        J = JSON.parse(this.XHR.responseText);
-        A = J["data"];
-        $mod.F(-1,A.length,0,0,0,0,0,0);
-        for (var $l = 0, $end = A.length - 1; $l <= $end; $l++) {
-          i = $l;
-          C = A[i];
-          $mod.F(i,Math.round(pas.JS.toNumber(C[0])),pas.JS.toNumber(C[1]),pas.JS.toNumber(C[4]),pas.JS.toNumber(C[3]),pas.JS.toNumber(C[2]),pas.JS.toNumber(C[5]),0);
-        };
-        $mod.F(-99,0,window.innerWidth,window.innerHeight,0,0,0,0);
-      };
-      Result = true;
-      return Result;
     };
     this.GetCanvas = function (aID) {
       var Result = null;
       var JS = undefined;
       JS = this.FCanvases[pas.SysUtils.IntToStr(aID)];
       if (rtl.isObject(JS)) {
-        Result = JS}
-       else Result = null;
+        Result = JS;
+        if ($mod.isWebGL) {
+          // Result.start2D();
+        };
+      } else Result = null;
       return Result;
     };
     this.allocate = function (SizeX, SizeY, aID) {
       var Result = 0;
       var C = null;
       var V = null;
-      C = window.document.createElement("CANVAS");
-      this.FCanvasParent.appendChild(C);
-      C.setAttribute("width",pas.SysUtils.IntToStr(SizeX));
-      C.setAttribute("height",pas.SysUtils.IntToStr(SizeY));
-      C.setAttribute("style"," position: absolute; width: 100%; height: 100%;");
-      this.FCurrentID += 1;
+      var ctx = null;
+      pas.System.Writeln(this.FCurrentID);
+      if (this.FCurrentID === 0) {
+        C = pas.fjsform.JSForm.canvas1;
+        this.FCurrentID = 1;
+        if ($mod.isWebGL) {
+          ctx = enableWebGLCanvas(C);
+          this.FCanvases[pas.SysUtils.IntToStr(this.FCurrentID)] = ctx;
+        } else this.FCanvases[pas.SysUtils.IntToStr(this.FCurrentID)] = C.getContext("2d");
+      } else {
+        C = pas.fjsform.JSForm.canvas2;
+        this.FCurrentID = 2;
+        this.FCanvases[pas.SysUtils.IntToStr(this.FCurrentID)] = C.getContext("2d");
+      };
       V = this.getModuleMemoryDataView();
-      this.FCanvases[pas.SysUtils.IntToStr(this.FCurrentID)] = C.getContext("2d");
       V.setUint32(aID,this.FCurrentID,this.FEnv.FIsLittleEndian);
       Result = 0;
       return Result;
@@ -4563,7 +5009,7 @@ rtl.module("wacanvas",["System","JS","Web","webassembly","wasienv"],function () 
       if (C != null) {
         S = this.FEnv.GetUTF8StringFromMem(aText,aTextLen);
         C.font = S;
-        C.textBaseline = "hanging";
+        C.textBaseline = "bottom";
         Result = 0;
       };
       return Result;
@@ -4582,16 +5028,41 @@ rtl.module("wacanvas",["System","JS","Web","webassembly","wasienv"],function () 
       var Result = 0;
       var S = "";
       S = this.FEnv.GetUTF8StringFromMem(aText,aTextLen);
-      this.XHR = new XMLHttpRequest();
-      this.XHR.addEventListener("load",rtl.createSafeCallback(this,"onLoad"));
-      this.XHR.open("GET",S,true);
-      this.XHR.send();
+      pas.fjsform.JSForm.getData(S);
       Result = 0;
+      return Result;
+    };
+    this.DoGetInputString = function (Sender, AInput) {
+      AInput.set(pas.System.Copy(pas.fjsform.JSForm.DataText,1,200) + "\n");
+    };
+    this.beginupdate = function (aID) {
+      var Result = 0;
+      var C = null;
+      Result = 1;
+      C = this.GetCanvas(aID);
+      if (C != null) {
+        if(C instanceof WebGLRenderingContext )
+        C.start2D();
+        Result = 0;
+      };
+      return Result;
+    };
+    this.endupdate = function (aID) {
+      var Result = 0;
+      var C = null;
+      Result = 1;
+      C = this.GetCanvas(aID);
+      if (C != null) {
+        if(C instanceof WebGLRenderingContext )
+        C.finish2D();
+        Result = 0;
+      };
       return Result;
     };
     this.Create$1 = function (aEnv) {
       pas.wasienv.TImportExtension.Create$1.call(this,aEnv);
       this.FCanvases = new Object();
+      aEnv.FOnGetConsoleInputString = rtl.createCallback(this,"DoGetInputString");
       return this;
     };
     this.FillImportObject = function (aObject) {
@@ -4612,6 +5083,8 @@ rtl.module("wacanvas",["System","JS","Web","webassembly","wasienv"],function () 
       aObject["setfont"] = rtl.createCallback(this,"setFont");
       aObject["setsize"] = rtl.createCallback(this,"setsize");
       aObject["getdata"] = rtl.createCallback(this,"getdata");
+      aObject["beginupdate"] = rtl.createCallback(this,"beginupdate");
+      aObject["endupdate"] = rtl.createCallback(this,"endupdate");
     };
     this.ImportName = function () {
       var Result = "";
@@ -4619,7 +5092,7 @@ rtl.module("wacanvas",["System","JS","Web","webassembly","wasienv"],function () 
       return Result;
     };
   });
-  this.F = null;
+  this.isWebGL = false;
   $mod.$implcode = function () {
     $impl.JSColor = function (AColor) {
       var Result = "";
@@ -4633,19 +5106,17 @@ rtl.module("wacanvas",["System","JS","Web","webassembly","wasienv"],function () 
       return Result;
     };
   };
-},["SysUtils"]);
-rtl.module("program",["System","wasihostapp","BrowserApp","JS","Classes","SysUtils","Web","webassembly","Types","wasienv","wacanvas"],function () {
+},["fjsform","canvas2webgl"]);
+rtl.module("program",["System","wasihostapp","BrowserApp","JS","Classes","SysUtils","Web","webassembly","Types","wasienv","wacanvas","fjsform","canvas2webgl"],function () {
   "use strict";
   var $mod = this;
   rtl.createClass(this,"TMyApplication",pas.wasihostapp.TBrowserWASIHostApplication,function () {
     this.$init = function () {
       pas.wasihostapp.TBrowserWASIHostApplication.$init.call(this);
-      this.Panel = null;
       this.FWasiEnv = null;
       this.FWACanvas = null;
     };
     this.$final = function () {
-      this.Panel = undefined;
       this.FWasiEnv = undefined;
       this.FWACanvas = undefined;
       pas.wasihostapp.TBrowserWASIHostApplication.$final.call(this);
@@ -4659,10 +5130,9 @@ rtl.module("program",["System","wasihostapp","BrowserApp","JS","Classes","SysUti
       var exps = null;
       exps = aDescriptor.Exported;
       this.FWasiEnv.SetInstance(aDescriptor.Instance);
-      window.console.info("got exports",exps);
-      window.console.info("got ImportObj",aDescriptor.Imports);
-      pas.wacanvas.F = exps["add"];
-      exps._start();
+      pas.fjsform.Fadd = exps["add"];
+      pas.fjsform.Fgetcx = exps["getcx"];
+      pas.fjsform.JSForm.InitChart();
     };
     this.DoWrite = function (Sender, aOutput) {
       pas.System.Writeln(aOutput);
@@ -4672,15 +5142,10 @@ rtl.module("program",["System","wasihostapp","BrowserApp","JS","Classes","SysUti
       this.FWasiEnv = pas.wasienv.TPas2JSWASIEnvironment.$create("Create$1");
       this.FWasiEnv.FOnStdErrorWrite = rtl.createCallback(this,"DoWrite");
       this.FWasiEnv.FOnStdOutputWrite = rtl.createCallback(this,"DoWrite");
-      this.Panel = document.getElementById("mchart");
-      if (this.Panel === null) {
-        this.Panel = document.createElement("div");
-        this.Panel.setAttribute("id","mchart");
-        this.Panel.setAttribute("style","background-color: rgb(0, 0, 0);width:100%;height:100%;position: absolute;padding:0px;");
-        document.body.appendChild(this.Panel);
-      };
+      pas.wacanvas.isWebGL = true;
+      pas.fjsform.JSForm = pas.fjsform.TJSForm.$create("Create$1");
       this.FWACanvas = pas.wacanvas.TWACanvas.$create("Create$1",[this.GetEnv()]);
-      this.FWACanvas.FCanvasParent = this.Panel;
+      this.FWACanvas.FCanvasParent = pas.fjsform.JSForm.Panel;
       this.SetRunEntryFunction("_initialize");
       return this;
     };
