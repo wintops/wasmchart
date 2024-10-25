@@ -9,8 +9,7 @@ JS: Pas2js FPC
 
 ### Demo
 
-   https://wintops.github.io/wasmchart/index.html
+https://wintops.github.io/wasmchart/index.html
 
-### Lib
-https://github.com/jagenjo/Canvas2DtoWebGL
+https://wintops.github.io/wasmchart/mcjs.html
 
